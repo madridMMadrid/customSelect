@@ -36,12 +36,7 @@
             margin-bottom: 6px;
         }
 
-        #wlw {
-            width: 500px;
-            height: 500px;
-            overflow: scroll;
-            padding: 10px;
-        }
+
 
         #selectFrame {
             width: 0;
@@ -56,8 +51,46 @@
             filter: alpha(opacity=40);
             opacity: .4;
         }
-        td {
-            background: red;
+
+        .table_sort table {
+            border-collapse: collapse;
+        }
+
+        .table_sort th {
+            color: #ffebcd;
+            background: #008b8b;
+            cursor: pointer;
+        }
+
+        .table_sort td,
+        .table_sort th {
+            width: 150px;
+            height: 40px;
+            text-align: center;
+            border: 2px solid #846868;
+        }
+
+        .table_sort tbody tr:nth-child(even) {
+            background: #e3e3e3;
+        }
+
+        th.sorted[data-order="1"],
+        th.sorted[data-order="-1"] {
+            position: relative;
+        }
+
+        th.sorted[data-order="1"]::after,
+        th.sorted[data-order="-1"]::after {
+            right: 8px;
+            position: absolute;
+        }
+
+        th.sorted[data-order="-1"]::after {
+            content: "▼"
+        }
+
+        th.sorted[data-order="1"]::after {
+            content: "▲"
         }
     </style>
 
@@ -77,43 +110,70 @@
         <div class="item" id="7">8f14e</div>
         <div class="item" id="8">c9f0f</div>
         <div class="item" id="9">45c48</div> -->
-        <table name="mytab" id="mytab1">
-            <tr>
-                <td>col1 Val1</td>
-                <td>col2 Val2</td>
-                <td>col1 Val1</td>
-                <td>col2 Val2</td>
-                <td>col1 Val1</td>
-                <td>col2 Val2</td>
-                <td>col1 Val1</td>
-                <td>col2 Val2</td>
-            </tr>
-            <tr>
-                <td>col1 Val3</td>
-                <td>col2 Val4</td>
-                <td>col1 Val3</td>
-                <td>col2 Val4</td>
-                <td>col1 Val3</td>
-                <td>col2 Val4</td>
-                <td>col1 Val3</td>
-                <td>col2 Val4</td>
-            </tr>
+        <table class="table_sort" name="mytab" id="mytab1">
+            <thead>
+                <tr>
+                    <th>id</th>
+                    <th>Имя</th>
+                    <th>Страна</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>col1 Val1</td>
+                    <td>col2 Val2</td>
+                    <td>10 000</td>
+                </tr>
+                <tr>
+                    <td>col1 Val3</td>
+                    <td>col2 Val4</td>
+                    <td>20 000</td>
+                </tr>
+                <tr>
+                    <td>col1 Val3</td>
+                    <td>col2 Val4</td>
+                    <td>30 000</td>
+                </tr>
+                <tr>
+                    <td>col1 Val3</td>
+                    <td>col2 Val4</td>
+                    <td>30</td>
+                </tr>
+                <tr>
+                    <td>col1 Val3</td>
+                    <td>col2 Val4</td>
+                    <td>500</td>
+                </tr>
+                <tr>
+                    <td>col1 Val3</td>
+                    <td>col2 Val4</td>
+                    <td>5</td>
+                </tr>
+            </tbody>
+
         </table>
     </div>
     <script>
+        const getSort = ({ target }) => {
+            console.log('target', target.dataset)
+            const order = (target.dataset.order = -(target.dataset.order || -1));
+            const index = [...target.parentNode.cells].indexOf(target);
+            const collator = new Intl.Collator(['en', 'ru'], { numeric: true });
+            const comparator = (index, order) => (a, b) => order * collator.compare(
+                a.children[index].innerHTML.replace(/\s/g, ''),
+                b.children[index].innerHTML.replace(/\s/g, '')
+            );
+            for (const tBody of target.closest('table').tBodies)
+                tBody.append(...[...tBody.rows].sort(comparator(index, order)));
+
+            for (const cell of target.parentNode.cells)
+                cell.classList.toggle('sorted', cell === target);
+        };
+        document.querySelectorAll('.table_sort thead').forEach(tableTH => tableTH.addEventListener('click', () => getSort(event)));
         let msdown = false,
-        msx = 0,
-        msy = 0;
+            msx = 0,
+            msy = 0;
         var selectedItems = new Array();
-        // function disableSelection(target) {
-        //     if (typeof target.onselectstart != "undefined") //IE route
-        //         target.onselectstart = function () { return false }
-        //     else if (typeof target.style.MozUserSelect != "undefined") //Firefox route
-        //         target.style.MozUserSelect = "none"
-        //     else //All other route (ie: Opera)
-        //         target.onmousedown = function () { return false }
-        //     target.style.cursor = "default"
-        // }
         function coords(e) {
             var posx = 0;
             var posy = 0;
@@ -130,7 +190,6 @@
             return new Array(posx, posy);
         }
         document.onmousedown = function (e) {
-            // if (!e) var e = window.event;
             msdown = true;
             var mousexy = coords(e);
             msx = mousexy[0];
@@ -138,7 +197,6 @@
             return false;
         }
         document.onmousemove = function (e) {
-            // console.log('onmousedown');
             var x1 = 0;
             var x2 = 0;
             var y1 = 0;
@@ -148,8 +206,6 @@
             y1 = msy;
             x2 = mousexy[0];
             y2 = mousexy[1];
-            // if (x1 == x2) { return; }
-            // if (y1 == y2) { return; }
             if (x1 > x2) {
                 x1 = x1 + x2;
                 x2 = x1 - x2;
@@ -168,15 +224,12 @@
             sframe.style.visibility = msdown ? 'visible' : 'hidden';
         }
         document.onmouseup = function (e) {
-            // if (!e) var e = window.event;
             msdown = false;
             var mousexy = coords(e);
             doSelection(msx, msy, mousexy[0], mousexy[1]);
             document.getElementById('selectFrame').style.visibility = msdown ? 'visible' : 'hidden';
         }
         function doSelection(x1, y1, x2, y2) {
-            // if (x1 == x2) { return; }
-            // if (y1 == y2) { return; }
             if (x1 > x2) {
                 x1 = x1 + x2;
                 x2 = x1 - x2;
@@ -187,34 +240,19 @@
                 y2 = y1 - y2;
                 y1 = y1 - y2;
             }
-            var table = document.getElementById("mytab1");
+            var table = document.getElementById("mytab1").tBodies[0];
+            console.log(table)
             for (var i = 0, row; row = table.rows[i]; i++) {
                 for (var j = 0, col; col = row.cells[j]; j++) {
                     let bounding = row.cells[j].getBoundingClientRect()
                     if (x2 >= bounding.left && x1 <= bounding.right && y2 >= bounding.bottom && y1 <= bounding.top) {
-                        // console.log(row.cells[j].innerHTML)
                         row.cells[j].style.backgroundColor = 'ccc'
                     } else {
-                        row.cells[j].style.backgroundColor = 'red'
+                        row.cells[j].style.backgroundColor = ''
                     }
                 }
             }
         }
-        // function init() {
-        //     var wlw = document.getElementById('wlw');
-        //     for (var childItem in wlw.childNodes) {
-        //         var item = wlw.childNodes[childItem];
-        //         if (item.nodeType == 1 && item.id != 'selectFrame') {
-        //             item.onclick = function (e) {
-        //                 if (!e) var e = window.event;
-        //                 if (e.ctrlKey) {
-        //                     selectedItems.push(this.id);
-        //                     this.className = 'itemSelected';
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
 
     </script>
 </body>
